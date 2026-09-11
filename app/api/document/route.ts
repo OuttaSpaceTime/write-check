@@ -1,12 +1,15 @@
 import { promises as fs } from 'fs'
 import path from 'path'
 import { NextResponse } from 'next/server'
+import { resolveDocPath } from '@/lib/docPath'
 
-const DOCUMENT_PATH = path.join(process.cwd(), 'data', 'document.md')
-
-export async function GET() {
+export async function GET(request: Request) {
+  const documentFile = resolveDocPath(new URL(request.url).searchParams.get('doc'), 'document.md')
+  if (!documentFile) {
+    return NextResponse.json({ error: 'doc must stay inside data/' }, { status: 400 })
+  }
   try {
-    const [text, stat] = await Promise.all([fs.readFile(DOCUMENT_PATH, 'utf8'), fs.stat(DOCUMENT_PATH)])
+    const [text, stat] = await Promise.all([fs.readFile(documentFile, 'utf8'), fs.stat(documentFile)])
     return NextResponse.json({ text, mtime: stat.mtimeMs })
   } catch {
     return NextResponse.json({ text: '', mtime: 0 })
@@ -14,6 +17,10 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const documentFile = resolveDocPath(new URL(request.url).searchParams.get('doc'), 'document.md')
+  if (!documentFile) {
+    return NextResponse.json({ error: 'doc must stay inside data/' }, { status: 400 })
+  }
   let body: { text?: unknown; baseMtime?: unknown; force?: unknown }
   try {
     body = (await request.json()) as { text?: unknown; baseMtime?: unknown; force?: unknown }
@@ -25,17 +32,17 @@ export async function POST(request: Request) {
   }
   if (body.force !== true && typeof body.baseMtime === 'number') {
     try {
-      const stat = await fs.stat(DOCUMENT_PATH)
+      const stat = await fs.stat(documentFile)
       if (stat.mtimeMs > body.baseMtime + 0.5) {
-        const current = await fs.readFile(DOCUMENT_PATH, 'utf8')
+        const current = await fs.readFile(documentFile, 'utf8')
         if (current !== body.text) {
           return NextResponse.json({ text: current, mtime: stat.mtimeMs }, { status: 409 })
         }
       }
     } catch {}
   }
-  await fs.mkdir(path.dirname(DOCUMENT_PATH), { recursive: true })
-  await fs.writeFile(DOCUMENT_PATH, body.text, 'utf8')
-  const stat = await fs.stat(DOCUMENT_PATH)
+  await fs.mkdir(path.dirname(documentFile), { recursive: true })
+  await fs.writeFile(documentFile, body.text, 'utf8')
+  const stat = await fs.stat(documentFile)
   return NextResponse.json({ mtime: stat.mtimeMs })
 }

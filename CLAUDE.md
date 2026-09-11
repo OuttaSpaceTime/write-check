@@ -21,11 +21,14 @@ one-character drift silently underlines the wrong word.
 - `app/api/check` — the only check endpoint: runs LanguageTool and the AI analysis, merges
   both issue lists and sorts by offset. LanguageTool failures degrade to a status, not a 500.
 - `app/api/document`, `app/api/review` — the bridge to `data/`; both tolerate missing files.
+  The `doc` query parameter picks the per-check directory below `data/`; `lib/docPath.ts`
+  resolves it and returns `null` — a 400 — for anything that escapes `data/`.
 - `lib/check/languagetool.ts` — LT client plus the `LtMatch` → `Issue` mapping.
 - `lib/ai/` — `patterns.ts` is the rule engine, `catalog.*.ts` the rules, `metrics.ts` the
   document statistics, `segment.ts` word/sentence splitting.
 - `lib/markdown/` — offset-preserving masking and the LT annotation payload.
-- `lib/review.ts` — resolves `data/review.json` notes to issues by locating each `quote`.
+- `lib/review.ts` — turns review notes into issues by locating each `quote` in the text; it
+  reads no files.
 - `components/` — `App.tsx` holds all state and the sync loops; the rest is presentational.
 
 ## Adding an AI-pattern rule

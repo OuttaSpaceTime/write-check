@@ -15,7 +15,8 @@ type Conflict = { serverText: string; serverMtime: number }
 
 type Popover = { issues: Issue[]; x: number; y: number }
 
-export default function App() {
+export default function App({ doc }: { doc: string }) {
+  const query = `?doc=${encodeURIComponent(doc)}`
   const [text, setText] = useState('')
   const [checkedText, setCheckedText] = useState('')
   const [language, setLanguage] = useState<CheckLanguage>('auto')
@@ -65,7 +66,7 @@ export default function App() {
 
   useEffect(() => {
     let cancelled = false
-    fetch('/api/document')
+    fetch(`/api/document${query}`)
       .then(response => response.json())
       .then((data: { text: string; mtime: number }) => {
         if (cancelled || !data.text || textRef.current !== '') return
@@ -77,7 +78,7 @@ export default function App() {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [query])
 
   useEffect(() => {
     const timer = setTimeout(() => void runCheck(text, language), 900)
@@ -88,7 +89,7 @@ export default function App() {
     if (text === lastSavedText.current || conflict) return
     const timer = setTimeout(async () => {
       try {
-        const response = await fetch('/api/document', {
+        const response = await fetch(`/api/document${query}`, {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
           body: JSON.stringify({ text, baseMtime: lastKnownMtime.current }),
@@ -107,13 +108,13 @@ export default function App() {
       }
     }, 1200)
     return () => clearTimeout(timer)
-  }, [text, conflict])
+  }, [text, conflict, query])
 
   useEffect(() => {
     const interval = setInterval(async () => {
       if (conflictRef.current || textRef.current !== lastSavedText.current) return
       try {
-        const response = await fetch('/api/document')
+        const response = await fetch(`/api/document${query}`)
         if (!response.ok) return
         const data = (await response.json()) as { text: string; mtime: number }
         if (data.mtime > lastKnownMtime.current + 0.5 && data.text !== textRef.current) {
@@ -126,13 +127,13 @@ export default function App() {
       }
     }, 2500)
     return () => clearInterval(interval)
-  }, [])
+  }, [query])
 
   useEffect(() => {
     let active = true
     const loadReview = async () => {
       try {
-        const response = await fetch('/api/review')
+        const response = await fetch(`/api/review${query}`)
         if (!response.ok) return
         const data = (await response.json()) as { notes: ReviewNote[] }
         if (active) setReviewNotes(data.notes)
@@ -146,7 +147,7 @@ export default function App() {
       active = false
       clearInterval(interval)
     }
-  }, [])
+  }, [query])
 
   const spanIsCurrent = useCallback((issue: Issue) => {
     if (issue.length === 0) return true
@@ -176,7 +177,7 @@ export default function App() {
 
   const keepMine = useCallback(async () => {
     try {
-      const response = await fetch('/api/document', {
+      const response = await fetch(`/api/document${query}`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ text: textRef.current, force: true }),
@@ -189,7 +190,7 @@ export default function App() {
     } catch {
       return
     }
-  }, [])
+  }, [query])
 
   const loadExternal = useCallback(() => {
     if (!conflict) return

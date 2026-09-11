@@ -30,13 +30,19 @@ rules.
 
 ## Files as the interface
 
-- `data/document.md` is the document. The editor autosaves 1.2 s after you stop typing and
+- Each check gets its own directory: `data/checks/<date>-<slug>/` holding `document.md` and
+  `review.json`. Open it at `http://localhost:3456/?doc=checks/<date>-<slug>`. The `doc`
+  parameter is a path relative to `data/` and is rejected if it escapes it; without it the
+  app reads `data/document.md`, the scratch document it used before.
+- `document.md` is the document. The editor autosaves 1.2 s after you stop typing and
   polls the file every 2.5 s, so edits made outside the browser appear automatically. A
   concurrent change on disk returns `409` and the UI asks which version to keep.
-- `data/review.json` holds review notes: `{"notes":[{quote,title,message,explanation,
+- `review.json` holds review notes: `{"notes":[{quote,title,message,explanation,
   suggestion,severity}]}`. Each `quote` must be a verbatim substring of the document — that
   is what anchors the note to a spot in the editor.
-- `node scripts/print-check.mjs [de-DE|en-US]` prints the current findings as JSON.
+- `node scripts/print-check.mjs [--doc=checks/<date>-<slug>] [de-DE|en-US]` prints the
+  current findings as JSON. It reads the document through the running server, so the `doc`
+  parameter means the same thing there as in the browser.
 - `.claude/skills/write-check/SKILL.md` is the agent side of this protocol.
 
 `data/` is gitignored; the documents you check never end up in the repository.

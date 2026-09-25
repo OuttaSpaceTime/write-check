@@ -38,13 +38,14 @@ Tell the user the relative path you chose, so they can reopen it later.
 
 ## Giving feedback (review notes)
 
-Write your feedback to `review.json` next to the document in the same check directory. The UI merges it into the "What to correct" list within ~2.5 s, labeled "Claude". Format:
+Write your feedback to `review.json` next to the document in the same check directory. Within ~2.5 s the UI shows each note, labeled "Claude", under the cell (the editor box) that holds its quote. Format:
 
 ```json
 {
   "notes": [
     {
       "quote": "exact substring copied from document.md",
+      "scope": "optional: \"cell\" or \"missing\"",
       "title": "Contradicts earlier claim",
       "message": "What is wrong, in one or two sentences.",
       "explanation": "Why this is a problem — teach the underlying writing principle.",
@@ -56,11 +57,18 @@ Write your feedback to `review.json` next to the document in the same check dire
 ```
 
 Rules:
-- `quote` must be copied verbatim from the current `document.md` so the note anchors to the right spot (it becomes clickable and underlined in the editor). Notes anchor to the FIRST occurrence of the quote — if the phrase appears more than once, extend the quote until it is unique. Omit `quote` only for document-level notes (structure, ordering, missing sections).
+- `quote` must be copied verbatim from the current `document.md` so the note anchors to the right spot (it becomes clickable and underlined in the editor). Notes anchor to the FIRST occurrence of the quote — if the phrase appears more than once, extend the quote until it is unique.
+- Pick where a note lives:
+  - no `scope`: the note is about the quoted words, which get underlined.
+  - `"scope": "cell"`: the note is about the whole paragraph that holds the quote ("this paragraph has no point"). Quote a few words from it; nothing is underlined.
+  - `"scope": "missing"`: something is missing right after the quote (a step, a number, a transition). The note appears as a dashed "Something is missing here" slot after that paragraph.
+  - no `quote`: the note is about the whole text (structure, ordering, a missing section or counter-argument) and appears in the "Whole text" box above the first cell.
 - `severity`: `"error"` (broken logic, factual contradiction), `"warning"` (unclear, weak argument), `"info"` (style polish).
 - Review for: **logic soundness** (does each claim follow from its support? non-sequiturs? contradictions? unsupported leaps?), **clarity** (is the point of each section stated and reachable? undefined jargon? buried lede?), and anything discussed in the current chat — feedback the user gave you or conclusions from your discussion belong in the notes too, so the app shows one consolidated list.
 - Every note must teach: always fill `explanation` with the principle, not just the fix.
-- Replace the whole file each time; write `{"notes": []}` to clear. Notes whose quote no longer matches the text are shown unanchored automatically.
+- Replace the whole file each time; write `{"notes": []}` to clear. Notes whose quote no longer matches the text move to the "Whole text" box with a "quoted words are no longer in the text" line.
+- The user ticks notes off as done. `done.json` in the check directory lists them: Claude notes as `claude|<title>|<quote>`, app findings as `<ruleId>|<flagged words>`. Read it before writing a new review and don't repeat a note the user already closed unless the problem came back in a new form; keep the same `title` and `quote` for a note you carry over, or its tick is lost.
+- `cells.json` is the app's own record of how the user split and merged cells. Don't edit it.
 
 ## Reading the app's own findings
 

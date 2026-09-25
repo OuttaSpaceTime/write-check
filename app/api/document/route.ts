@@ -10,7 +10,7 @@ export async function GET(request: Request) {
   }
   try {
     const [text, stat] = await Promise.all([fs.readFile(documentFile, 'utf8'), fs.stat(documentFile)])
-    return NextResponse.json({ text, mtime: stat.mtimeMs })
+    return NextResponse.json({ text: text.replace(/\r\n?/g, '\n'), mtime: stat.mtimeMs })
   } catch {
     return NextResponse.json({ text: '', mtime: 0 })
   }

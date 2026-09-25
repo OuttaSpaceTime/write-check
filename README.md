@@ -2,7 +2,9 @@
 
 A local markdown writing checker for German and English. It combines LanguageTool
 grammar/spelling checks with an AI-writing-style detector and document metrics, and shows
-the findings inline in a CodeMirror editor next to a markdown preview.
+the findings right below the text they are about: the document is split into cells, one small
+CodeMirror editor per paragraph, and each cell's feedback sits under it. Cells can be split,
+merged and added; findings can be ticked off as done.
 
 Personal tool, not a product. Its interface is the filesystem: the document and the review
 notes are plain files, so an agent can edit the same text you are editing.
@@ -37,9 +39,15 @@ rules.
 - `document.md` is the document. The editor autosaves 1.2 s after you stop typing and
   polls the file every 2.5 s, so edits made outside the browser appear automatically. A
   concurrent change on disk returns `409` and the UI asks which version to keep.
-- `review.json` holds review notes: `{"notes":[{quote,title,message,explanation,
+- `review.json` holds review notes: `{"notes":[{quote,scope,title,message,explanation,
   suggestion,severity}]}`. Each `quote` must be a verbatim substring of the document — that
-  is what anchors the note to a spot in the editor.
+  is what anchors the note to a spot in the editor. `scope` is optional: `"cell"` for a note
+  about the whole paragraph, `"missing"` for something missing after the quote. A note
+  without a quote is about the whole text.
+- `done.json` lists the findings the user ticked off (`{"done":[key,…]}`).
+- `cells.json` records the cell splits and merges that differ from one cell per paragraph
+  (`{"splits":[anchor,…],"joins":[anchor,…]}`), each anchored by the first line of the cell
+  it starts. The app writes it; without it every paragraph is its own cell.
 - `node scripts/print-check.mjs [--doc=checks/<date>-<slug>] [de-DE|en-US]` prints the
   current findings as JSON. It reads the document through the running server, so the `doc`
   parameter means the same thing there as in the browser.

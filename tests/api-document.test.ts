@@ -29,6 +29,13 @@ describe('/api/document with a doc parameter', () => {
     expect(body.text).toBe('per-check text')
   })
 
+  it('serves a CRLF file with plain line feeds, the way the editor holds it', async () => {
+    await fs.mkdir(dir, { recursive: true })
+    await fs.writeFile(path.join(dir, 'document.md'), '## Title\r\n\r\nTeh body.\r\n', 'utf8')
+    const read = await GET(new Request(`http://localhost/api/document?doc=${doc}`))
+    expect(((await read.json()) as { text: string }).text).toBe('## Title\n\nTeh body.\n')
+  })
+
   it('rejects a doc that escapes data/', async () => {
     expect((await GET(new Request('http://localhost/api/document?doc=../..'))).status).toBe(400)
     expect((await POST(post('http://localhost/api/document?doc=../..', { text: 'nope' }))).status).toBe(400)

@@ -1,11 +1,12 @@
 'use client'
 
+import { useState } from 'react'
 import type { Issue, IssueSource } from '@/lib/check/types'
 
 type Props = {
   issues: Issue[]
-  text: string
-  checkedText: string
+  isDone: (issue: Issue) => boolean
+  onToggleDone: (issue: Issue) => void
   onApply: (issue: Issue, replacement: string) => void
   onJump: (issue: Issue) => void
 }
@@ -18,76 +19,88 @@ const SOURCE_LABEL: Record<IssueSource, string> = {
   'claude-feedback': 'Claude',
 }
 
-function spanIsCurrent(issue: Issue, text: string, checkedText: string): boolean {
-  if (issue.length === 0) return true
-  if (issue.offset + issue.length > text.length) return false
-  return (
-    text.slice(issue.offset, issue.offset + issue.length) ===
-    checkedText.slice(issue.offset, issue.offset + issue.length)
-  )
-}
+const SCOPE_MARK = { cell: '¶', missing: '‸' }
 
-export default function IssueList({ issues, text, checkedText, onApply, onJump }: Props) {
-  if (issues.length === 0) {
-    return <p className="empty-state">No issues found.</p>
-  }
+export default function IssueList({ issues, isDone, onToggleDone, onApply, onJump }: Props) {
+  const [showDone, setShowDone] = useState(false)
+  const visible = showDone ? issues : issues.filter(issue => !isDone(issue))
+  const doneCount = issues.filter(isDone).length
   return (
-    <ul className="issue-list">
-      {issues.map(issue => {
-        const current = spanIsCurrent(issue, text, checkedText)
-        return (
-          <li key={issue.id} className={`issue issue-${issue.source}`}>
-            <div className="issue-header">
-              <span className={`badge badge-${issue.source}`}>{SOURCE_LABEL[issue.source]}</span>
-              <strong>{issue.title}</strong>
-              {issue.length > 0 &&
-                (current ? (
-                  <button type="button" className="link-button" onClick={() => onJump(issue)}>
-                    Jump to text
-                  </button>
-                ) : (
-                  <span className="stale-note">text changed — re-checking…</span>
-                ))}
-            </div>
-            <Excerpt source={issue.source === 'claude-feedback' ? text : checkedText} issue={issue} />
-            <p className="issue-message">{issue.message}</p>
-            {issue.explanation && (
-              <p className="issue-why">
-                <span className="why-label">Why:</span> {issue.explanation}
-              </p>
-            )}
-            {issue.replacements.length > 0 && current && (
-              <div className="issue-fixes">
-                {issue.replacements.slice(0, 3).map((replacement, index) => (
-                  <button
-                    key={`${index}-${replacement}`}
-                    type="button"
-                    className="fix-button"
-                    onClick={() => onApply(issue, replacement)}
-                  >
-                    {replacement === '' ? 'Remove' : replacement}
-                  </button>
-                ))}
-              </div>
-            )}
-          </li>
-        )
-      })}
-    </ul>
-  )
-}
-
-function Excerpt({ source, issue }: { source: string; issue: Issue }) {
-  if (issue.length === 0 || issue.offset + issue.length > source.length) return null
-  const start = Math.max(0, issue.offset - 30)
-  const end = Math.min(source.length, issue.offset + issue.length + 30)
-  return (
-    <p className="issue-excerpt">
-      {start > 0 ? '…' : ''}
-      {source.slice(start, issue.offset)}
-      <mark>{source.slice(issue.offset, issue.offset + issue.length)}</mark>
-      {source.slice(issue.offset + issue.length, end)}
-      {end < source.length ? '…' : ''}
-    </p>
+    <div className="issue-group">
+      {visible.length > 0 && (
+        <ul className="issue-list">
+          {visible.map((issue, index) => {
+            const checked = isDone(issue)
+            return (
+              <li
+                key={`${issue.id}-${index}`}
+                className={`issue issue-${issue.source}${checked ? ' is-done' : ''}`}
+              >
+                <input
+                  type="checkbox"
+                  className="done-box"
+                  checked={checked}
+                  onChange={() => onToggleDone(issue)}
+                  aria-label={`Mark “${issue.title}” as done`}
+                />
+                <div className="issue-body">
+                  <div className="issue-header">
+                    {issue.scope && issue.scope !== 'document' && (
+                      <span
+                        className={`scope-mark scope-${issue.scope}`}
+                        title={issue.scope === 'cell' ? 'About the whole cell' : 'Something is missing here'}
+                      >
+                        {SCOPE_MARK[issue.scope]}
+                      </span>
+                    )}
+                    <span className={`badge badge-${issue.source}`}>{SOURCE_LABEL[issue.source]}</span>
+                    <strong>{issue.title}</strong>
+                    {issue.length > 0 && !checked && (
+                      <button type="button" className="link-button" onClick={() => onJump(issue)}>
+                        Jump to text
+                      </button>
+                    )}
+                  </div>
+                  {!checked && (
+                    <>
+                      {issue.staleQuote && (
+                        <p className="stale-quote">
+                          The quoted words are no longer in the text: “{issue.staleQuote}”
+                        </p>
+                      )}
+                      <p className="issue-message">{issue.message}</p>
+                      {issue.explanation && (
+                        <p className="issue-why">
+                          <span className="why-label">Why:</span> {issue.explanation}
+                        </p>
+                      )}
+                      {issue.replacements.length > 0 && (
+                        <div className="issue-fixes">
+                          {issue.replacements.slice(0, 3).map((replacement, fixIndex) => (
+                            <button
+                              key={`${fixIndex}-${replacement}`}
+                              type="button"
+                              className="fix-button"
+                              onClick={() => onApply(issue, replacement)}
+                            >
+                              {replacement === '' ? 'Remove' : replacement}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              </li>
+            )
+          })}
+        </ul>
+      )}
+      {doneCount > 0 && (
+        <button type="button" className="done-row" onClick={() => setShowDone(!showDone)}>
+          ✓ {doneCount} done · <span className="done-row-action">{showDone ? 'Hide' : 'Show'}</span>
+        </button>
+      )}
+    </div>
   )
 }

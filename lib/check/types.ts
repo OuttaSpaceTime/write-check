@@ -2,6 +2,8 @@ export type IssueSource = 'grammar' | 'spelling' | 'style' | 'ai-pattern' | 'cla
 
 export type IssueSeverity = 'error' | 'warning' | 'info'
 
+export type IssueScope = 'cell' | 'missing' | 'document'
+
 export type Issue = {
   id: string
   source: IssueSource
@@ -13,6 +15,8 @@ export type Issue = {
   offset: number
   length: number
   severity: IssueSeverity
+  scope?: IssueScope
+  staleQuote?: string
 }
 
 export type DocMetric = {

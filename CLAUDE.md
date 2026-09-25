@@ -15,12 +15,19 @@ one-character drift silently underlines the wrong word.
   text, so the offsets it returns already point into the original document.
 - Never trim, normalize, or re-wrap text before checking it. When you add a check, assert
   offsets by slicing: `text.slice(issue.offset, issue.offset + issue.length)`.
+- Cells are a view over the one text: `joinCells(deriveCells(text)) === text`, and splitting
+  or merging cells never changes the text. The check always runs on the whole text; each cell
+  editor gets its findings shifted by the cell's start offset.
+- Between checks, `mapIssues` in `lib/check/mapIssues.ts` shifts findings through the edits
+  since the last check and drops the ones whose words changed, so offsets stay current.
 
 ## Layout
 
 - `app/api/check` — the only check endpoint: runs LanguageTool and the AI analysis, merges
   both issue lists and sorts by offset. LanguageTool failures degrade to a status, not a 500.
-- `app/api/document`, `app/api/review` — the bridge to `data/`; both tolerate missing files.
+- `app/api/document`, `app/api/review`, `app/api/cells`, `app/api/done` — the bridge to
+  `data/`; all tolerate missing files. The document GET serves `\n` line endings, because
+  CodeMirror holds the text that way and offsets must match.
   The `doc` query parameter picks the per-check directory below `data/`; `lib/docPath.ts`
   resolves it and returns `null` — a 400 — for anything that escapes `data/`.
 - `lib/check/languagetool.ts` — LT client plus the `LtMatch` → `Issue` mapping.
@@ -28,7 +35,11 @@ one-character drift silently underlines the wrong word.
   document statistics, `segment.ts` word/sentence splitting.
 - `lib/markdown/` — offset-preserving masking and the LT annotation payload.
 - `lib/review.ts` — turns review notes into issues by locating each `quote` in the text; it
-  reads no files.
+  reads no files. A note's `scope` places it on a whole cell, as a "missing" slot, or (no
+  quote) on the whole text.
+- `lib/cells.ts` — cell model: paragraph cells (a heading joins the block below), split,
+  merge, insert, delete, the `cells.json` layout anchors, and placing issues into cells.
+- `lib/done.ts` — the key a ticked-off finding is saved under in `done.json`.
 - `components/` — `App.tsx` holds all state and the sync loops; the rest is presentational.
 
 ## Adding an AI-pattern rule

@@ -148,6 +148,13 @@ describe('insertCell and deleteCell', () => {
     expect(joinCells(deleteCell(doc, 1))).toBe('First.\n\nSecond.')
   })
 
+  it('keeps the paragraph break when deleting the first sentence cell of a paragraph', () => {
+    const doc = splitCell(deriveCells('Intro.\n\nFirst sentence. Second sentence.\n'), 1, 'First sentence. '.length)
+    expect(joinCells(deleteCell(doc, 1))).toBe('Intro.\n\nSecond sentence.\n')
+    expect(joinCells(deleteCell(doc, 0))).toBe('First sentence. Second sentence.\n')
+    expect(joinCells(deleteCell(deriveCells('Intro.\n\nLast.\n'), 1))).toBe('Intro.\n')
+  })
+
   it('never deletes the only cell', () => {
     const doc = deriveCells('')
     expect(deleteCell(doc, 0)).toBe(doc)

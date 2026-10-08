@@ -117,7 +117,7 @@ export function insertCell(doc: CellDoc, index: number): CellDoc {
 
 export function deleteCell(doc: CellDoc, index: number): CellDoc {
   if (doc.cells.length === 1) return doc
-  const gap = index === 0 ? 1 : index
+  const gap = index === 0 || (index < doc.cells.length - 1 && /\n\s*\n/.test(doc.gaps[index]!)) ? index + 1 : index
   return {
     cells: doc.cells.filter((_, candidate) => candidate !== index),
     gaps: doc.gaps.filter((_, candidate) => candidate !== gap),

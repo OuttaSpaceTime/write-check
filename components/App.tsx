@@ -477,6 +477,10 @@ export default function App({ doc }: { doc: string }) {
           const inserted = insertCell(current, index)
           commit(inserted, { id: inserted.cells[index + 1]!.id, pos: 0 })
         }}
+        onDelete={id => {
+          const current = cellsRef.current
+          commit(deleteCell(current, current.cells.findIndex(cell => cell.id === id)))
+        }}
       />
       {popover && (
         <IssuePopover

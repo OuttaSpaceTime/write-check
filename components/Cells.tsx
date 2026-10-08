@@ -24,6 +24,7 @@ type Props = {
   onSplitAtCursor: (id: string) => void
   onMergeWithNext: (id: string) => void
   onInsertBelow: (id: string) => void
+  onDelete: (id: string) => void
   focusRequest: { id: string; pos: number } | null
 }
 
@@ -85,6 +86,18 @@ export default function Cells(props: Props) {
                     <path d="M8 10v5M5.5 12.5h5" />
                   </svg>
                 </button>
+                {last > 0 && (
+                  <button
+                    type="button"
+                    title="Delete cell"
+                    aria-label="Delete cell"
+                    onClick={() => props.onDelete(cell.id)}
+                  >
+                    <svg viewBox="0 0 16 16" aria-hidden="true">
+                      <path d="M2.5 4h11M6 4V2.5h4V4M4 4l0.7 10h6.6L12 4M6.8 6.5v5M9.2 6.5v5" />
+                    </svg>
+                  </button>
+                )}
               </span>
               <Editor
                 ref={handle => props.editorRef(cell.id, handle)}

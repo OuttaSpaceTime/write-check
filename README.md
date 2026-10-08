@@ -4,7 +4,7 @@ A local markdown writing checker for German and English. It combines LanguageToo
 grammar/spelling checks with an AI-writing-style detector and document metrics, and shows
 the findings right below the text they are about: the document is split into cells, one small
 CodeMirror editor per paragraph, and each cell's feedback sits under it. Cells can be split,
-merged and added; findings can be ticked off as done.
+merged, added and deleted; findings can be ticked off as done.
 
 Personal tool, not a product. Its interface is the filesystem: the document and the review
 notes are plain files, so an agent can edit the same text you are editing.

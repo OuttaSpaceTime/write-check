@@ -203,6 +203,12 @@ body {
   color: var(--faint);
 }
 
+.editor .cm-finding-highlight {
+  background: var(--accent-soft);
+  box-shadow: 0 0 0 1px var(--accent);
+  border-radius: 2px;
+}
+
 .cell-actions {
   display: flex;
   justify-content: flex-end;
@@ -379,8 +385,13 @@ body {
   transform: translateY(-0.3em) scale(1.5);
 }
 
-.link-button {
+.issue-actions {
+  display: flex;
+  gap: 0.75rem;
   margin-left: auto;
+}
+
+.link-button {
   background: none;
   border: none;
   padding: 0;
@@ -511,6 +522,22 @@ body {
   display: flex;
   justify-content: space-between;
   gap: 1rem;
+}
+
+.grade {
+  margin-left: 0.5rem;
+}
+
+.grade-good {
+  color: var(--done);
+}
+
+.grade-ok {
+  color: var(--spelling);
+}
+
+.grade-weak {
+  color: var(--grammar);
 }
 
 .metric-value {

@@ -79,3 +79,12 @@ node scripts/print-check.mjs --doc=checks/<YYYY-MM-DD>-<slug>
 ```
 
 Append `de-DE` or `en-US` to force the language. Use this before discussing the text so your feedback and the app's findings don't contradict each other, and to answer questions like "why is this flagged?".
+
+## Technical words the spell checker doesn't know
+
+Every time you write or change `document.md`, run `print-check` afterwards and go through the spelling findings. LanguageTool flags tool, library and project names it has no dictionary entry for (`esbuild`, `oxc`, `rolldown`, `Angular`, `Vite`). These are noise, not mistakes.
+
+- Add each flagged word that is clearly a technical name, spelled the way its project spells it, to `data/words.json` (`{"words": [...]}`). Copy the flagged span exactly as it appears in the text. Matching ignores case.
+- The file is shared by every check. Keep the words already in it, and create it if it doesn't exist.
+- Never add a real misspelling, an ordinary word, or a misspelled technical name (`esbiuld`). When you're unsure whether a word is a technical name, leave the finding for the user.
+- The app reloads the list every ~2.5 s and runs the check again, so the findings disappear without a page reload. Run `print-check` once more to confirm only real spelling findings remain.

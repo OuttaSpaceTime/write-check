@@ -13,6 +13,8 @@ type Props = {
   onToggleDone: (issue: Issue) => void
   onApply: (issue: Issue, replacement: string) => void
   onJump: (issue: Issue) => void
+  onHover: (issue: Issue | null) => void
+  copyText: (issue: Issue) => string
   editorRef: (id: string, handle: EditorHandle | null) => void
   onCellChange: (id: string, value: string, pasted: Pasted | null) => void
   onCellCommand: (id: string, command: CellCommand, pos: number) => boolean
@@ -27,7 +29,7 @@ type Props = {
 
 export default function Cells(props: Props) {
   const { cells, starts, placed, isDone } = props
-  const list = { isDone, onToggleDone: props.onToggleDone, onApply: props.onApply, onJump: props.onJump }
+  const list = { isDone, onToggleDone: props.onToggleDone, onApply: props.onApply, onJump: props.onJump, onHover: props.onHover, copyText: props.copyText }
   const last = cells.cells.length - 1
   return (
     <div className="cells">

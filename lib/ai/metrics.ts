@@ -15,7 +15,8 @@ export function computeMetrics(prose: string, locale: 'en' | 'de'): DocMetric[] 
 function burstiness(lengths: number[]): DocMetric {
   const value = coefficientOfVariation(lengths)
   const enough = lengths.length >= 8
-  const flagged = enough && value < 0.35
+  const grade = !enough ? null : value < 0.35 ? 'weak' : value < 0.5 ? 'ok' : 'good'
+  const flagged = grade === 'weak'
   return {
     id: 'burstiness',
     label: 'Sentence rhythm (burstiness)',
@@ -23,6 +24,7 @@ function burstiness(lengths: number[]): DocMetric {
       ? `variation ${value.toFixed(2)} across ${lengths.length} sentences`
       : `${lengths.length} sentences — too few to judge`,
     flagged,
+    grade,
     assessment: flagged
       ? 'Sentence lengths are very uniform. LLM text tends to keep an even rhythm, while human writing mixes short, punchy sentences with long, winding ones.'
       : 'Sentence length varies naturally.',
@@ -34,12 +36,14 @@ function burstiness(lengths: number[]): DocMetric {
 function averageSentenceLength(lengths: number[]): DocMetric {
   const value = mean(lengths)
   const enough = lengths.length >= 5
-  const flagged = enough && value > 26
+  const grade = !enough ? null : value > 26 ? 'weak' : value > 20 ? 'ok' : 'good'
+  const flagged = grade === 'weak'
   return {
     id: 'sentence-length',
     label: 'Average sentence length',
     value: enough ? `${value.toFixed(1)} words per sentence` : `${lengths.length} sentences — too few to judge`,
     flagged,
+    grade,
     assessment: flagged
       ? 'Sentences average more than 26 words. Long chains of clauses bury the point and are typical of generated filler.'
       : 'Average sentence length is in a readable range.',
@@ -50,12 +54,14 @@ function averageSentenceLength(lengths: number[]): DocMetric {
 function lexicalDiversity(words: string[]): DocMetric {
   const value = movingAverageTypeTokenRatio(words)
   const enough = words.length >= 120
-  const flagged = enough && value < 0.5
+  const grade = !enough ? null : value < 0.5 ? 'weak' : value < 0.65 ? 'ok' : 'good'
+  const flagged = grade === 'weak'
   return {
     id: 'lexical-diversity',
     label: 'Lexical diversity',
     value: enough ? `${value.toFixed(2)} (windowed type-token ratio)` : `${words.length} words — too few to judge`,
     flagged,
+    grade,
     assessment: flagged
       ? 'The same words repeat unusually often. Generated text recycles a small vocabulary of safe, generic words.'
       : 'Vocabulary variety looks healthy.',
@@ -71,7 +77,8 @@ function paragraphUniformity(prose: string): DocMetric {
     .filter(count => count > 0)
   const value = coefficientOfVariation(lengths)
   const enough = lengths.length >= 4
-  const flagged = enough && value < 0.25
+  const grade = !enough ? null : value < 0.25 ? 'weak' : value < 0.4 ? 'ok' : 'good'
+  const flagged = grade === 'weak'
   return {
     id: 'paragraph-uniformity',
     label: 'Paragraph size variation',
@@ -79,6 +86,7 @@ function paragraphUniformity(prose: string): DocMetric {
       ? `variation ${value.toFixed(2)} across ${lengths.length} paragraphs`
       : `${lengths.length} paragraphs — too few to judge`,
     flagged,
+    grade,
     assessment: flagged
       ? 'Paragraphs are suspiciously even in size — a hallmark of generated text, which portions content into equal blocks regardless of substance.'
       : 'Paragraph sizes vary with their content.',

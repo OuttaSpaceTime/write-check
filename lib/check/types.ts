@@ -19,11 +19,14 @@ export type Issue = {
   staleQuote?: string
 }
 
+export type MetricGrade = 'good' | 'ok' | 'weak'
+
 export type DocMetric = {
   id: string
   label: string
   value: string
   flagged: boolean
+  grade: MetricGrade | null
   assessment: string
   advice: string
 }

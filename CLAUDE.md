@@ -25,8 +25,8 @@ one-character drift silently underlines the wrong word.
 
 - `app/api/check` — the only check endpoint: runs LanguageTool and the AI analysis, merges
   both issue lists and sorts by offset. LanguageTool failures degrade to a status, not a 500.
-- `app/api/document`, `app/api/review`, `app/api/cells`, `app/api/done` — the bridge to
-  `data/`; all tolerate missing files. The document GET serves `\n` line endings, because
+- `app/api/document`, `app/api/review`, `app/api/cells`, `app/api/done`, `app/api/words` — the
+  bridge to `data/`; all tolerate missing files. The document GET serves `\n` line endings, because
   CodeMirror holds the text that way and offsets must match.
   The `doc` query parameter picks the per-check directory below `data/`; `lib/docPath.ts`
   resolves it and returns `null` — a 400 — for anything that escapes `data/`.
@@ -39,6 +39,7 @@ one-character drift silently underlines the wrong word.
   quote) on the whole text.
 - `lib/cells.ts` — cell model: paragraph cells (a heading joins the block below), split,
   merge, insert, delete, the `cells.json` layout anchors, and placing issues into cells.
+- `lib/words.ts` — drops spelling findings on words listed in the shared `data/words.json`.
 - `lib/done.ts` — the key a ticked-off finding is saved under in `done.json`.
 - `components/` — `App.tsx` holds all state and the sync loops; the rest is presentational.
 

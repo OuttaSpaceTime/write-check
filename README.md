@@ -45,6 +45,9 @@ rules.
   about the whole paragraph, `"missing"` for something missing after the quote. A note
   without a quote is about the whole text.
 - `done.json` lists the findings the user ticked off (`{"done":[key,…]}`).
+- `data/words.json` is the word list shared by every check (`{"words":[…]}`): technical
+  names such as `esbuild` or `oxc` that LanguageTool doesn't know. Spelling findings on these
+  words are dropped, ignoring case. The app reloads the list every 2.5 s.
 - `cells.json` records the cell splits and merges that differ from one cell per paragraph
   (`{"splits":[anchor,…],"joins":[anchor,…]}`), each anchored by the first line of the cell
   it starts. The app writes it; without it every paragraph is its own cell.

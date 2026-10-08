@@ -9,6 +9,8 @@ type Props = {
   onToggleDone: (issue: Issue) => void
   onApply: (issue: Issue, replacement: string) => void
   onJump: (issue: Issue) => void
+  onHover: (issue: Issue | null) => void
+  copyText: (issue: Issue) => string
 }
 
 const SOURCE_LABEL: Record<IssueSource, string> = {
@@ -21,8 +23,9 @@ const SOURCE_LABEL: Record<IssueSource, string> = {
 
 const SCOPE_MARK = { cell: '¶', missing: '‸' }
 
-export default function IssueList({ issues, isDone, onToggleDone, onApply, onJump }: Props) {
+export default function IssueList({ issues, isDone, onToggleDone, onApply, onJump, onHover, copyText }: Props) {
   const [showDone, setShowDone] = useState(false)
+  const [copiedId, setCopiedId] = useState<string | null>(null)
   const visible = showDone ? issues : issues.filter(issue => !isDone(issue))
   const doneCount = issues.filter(isDone).length
   return (
@@ -35,12 +38,17 @@ export default function IssueList({ issues, isDone, onToggleDone, onApply, onJum
               <li
                 key={`${issue.id}-${index}`}
                 className={`issue issue-${issue.source}${checked ? ' is-done' : ''}`}
+                onMouseEnter={() => onHover(checked ? null : issue)}
+                onMouseLeave={() => onHover(null)}
               >
                 <input
                   type="checkbox"
                   className="done-box"
                   checked={checked}
-                  onChange={() => onToggleDone(issue)}
+                  onChange={() => {
+                    onHover(null)
+                    onToggleDone(issue)
+                  }}
                   aria-label={`Mark “${issue.title}” as done`}
                 />
                 <div className="issue-body">
@@ -55,10 +63,25 @@ export default function IssueList({ issues, isDone, onToggleDone, onApply, onJum
                     )}
                     <span className={`badge badge-${issue.source}`}>{SOURCE_LABEL[issue.source]}</span>
                     <strong>{issue.title}</strong>
-                    {issue.length > 0 && !checked && (
-                      <button type="button" className="link-button" onClick={() => onJump(issue)}>
-                        Jump to text
-                      </button>
+                    {!checked && (
+                      <span className="issue-actions">
+                        <button
+                          type="button"
+                          className="link-button"
+                          onClick={async () => {
+                            await navigator.clipboard.writeText(copyText(issue))
+                            setCopiedId(issue.id)
+                            setTimeout(() => setCopiedId(null), 1500)
+                          }}
+                        >
+                          {copiedId === issue.id ? 'Copied ✓' : 'Copy'}
+                        </button>
+                        {issue.length > 0 && (
+                          <button type="button" className="link-button" onClick={() => onJump(issue)}>
+                            Jump to text
+                          </button>
+                        )}
+                      </span>
                     )}
                   </div>
                   {!checked && (

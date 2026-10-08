@@ -63,3 +63,39 @@ describe('paragraph uniformity', () => {
     expect(metric(text, 'paragraph-uniformity').flagged).toBe(false)
   })
 })
+
+function sentencesOf(lengths: number[]): string {
+  return lengths.map(length => Array.from({ length }, (_, i) => (i === 0 ? 'Word' : `w${i}`)).join(' ') + '.').join(' ')
+}
+
+describe('grades', () => {
+  it('grades sentence rhythm', () => {
+    expect(metric(uniformSentences, 'burstiness').grade).toBe('weak')
+    expect(metric(sentencesOf([7, 3, 7, 3, 7, 3, 7, 3, 7, 3]), 'burstiness').grade).toBe('ok')
+    expect(metric(variedSentences, 'burstiness').grade).toBe('good')
+    expect(metric('One sentence here. Another one.', 'burstiness').grade).toBeNull()
+  })
+
+  it('grades average sentence length', () => {
+    expect(metric(sentencesOf([28, 28, 28, 28, 28]), 'sentence-length').grade).toBe('weak')
+    expect(metric(sentencesOf([23, 23, 23, 23, 23]), 'sentence-length').grade).toBe('ok')
+    expect(metric(uniformSentences, 'sentence-length').grade).toBe('good')
+    expect(metric(sentencesOf([30, 30]), 'sentence-length').grade).toBeNull()
+  })
+
+  it('grades lexical diversity', () => {
+    const repetitive = Array.from({ length: 20 }, () => 'the process provides a solution for the process and the solution works.').join(' ')
+    expect(metric(repetitive, 'lexical-diversity').grade).toBe('weak')
+    expect(metric(Array.from({ length: 200 }, (_, i) => `word${i % 60}`).join(' ') + '.', 'lexical-diversity').grade).toBe('ok')
+    expect(metric(Array.from({ length: 150 }, (_, i) => `word${i}`).join(' ') + '.', 'lexical-diversity').grade).toBe('good')
+    expect(metric('A few words only.', 'lexical-diversity').grade).toBeNull()
+  })
+
+  it('grades paragraph size variation', () => {
+    const paragraphs = (lengths: number[]) => lengths.map(length => sentencesOf([length])).join('\n\n')
+    expect(metric(paragraphs([12, 12, 12, 12, 12]), 'paragraph-uniformity').grade).toBe('weak')
+    expect(metric(paragraphs([13, 7, 13, 7]), 'paragraph-uniformity').grade).toBe('ok')
+    expect(metric(paragraphs([1, 40, 3, 7]), 'paragraph-uniformity').grade).toBe('good')
+    expect(metric(paragraphs([5, 9]), 'paragraph-uniformity').grade).toBeNull()
+  })
+})

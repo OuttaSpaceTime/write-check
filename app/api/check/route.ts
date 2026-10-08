@@ -1,7 +1,10 @@
+import { promises as fs } from 'fs'
+import path from 'path'
 import { NextResponse } from 'next/server'
 import { analyzeAi } from '@/lib/ai'
 import { languageToolAvailable, runLanguageTool } from '@/lib/check/languagetool'
 import type { CheckResponse, Issue, LanguageToolStatus } from '@/lib/check/types'
+import { dropKnownWords } from '@/lib/words'
 
 export async function POST(request: Request) {
   let body: { text?: unknown; language?: unknown }
@@ -34,11 +37,23 @@ export async function POST(request: Request) {
   const aiLanguage = detected.startsWith('de') ? 'de' : detected.startsWith('en') ? 'en' : 'auto'
   const ai = analyzeAi(text, aiLanguage)
   const response: CheckResponse = {
-    issues: [...ltIssues, ...ai.issues].sort((a, b) => a.offset - b.offset || b.length - a.length),
+    issues: dropKnownWords([...ltIssues, ...ai.issues], text, await readWords()).sort(
+      (a, b) => a.offset - b.offset || b.length - a.length
+    ),
     metrics: ai.metrics,
     detectedLanguage: ai.lang,
     languageToolAvailable: status === 'ok',
     languageToolStatus: status,
   }
   return NextResponse.json(response)
+}
+
+async function readWords(): Promise<string[]> {
+  try {
+    const file = path.join(process.cwd(), 'data', 'words.json')
+    const parsed = JSON.parse(await fs.readFile(file, 'utf8')) as { words?: unknown }
+    return Array.isArray(parsed.words) ? parsed.words.filter(word => typeof word === 'string') : []
+  } catch {
+    return []
+  }
 }

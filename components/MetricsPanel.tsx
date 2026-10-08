@@ -1,6 +1,8 @@
 'use client'
 
-import type { DocMetric } from '@/lib/check/types'
+import type { DocMetric, MetricGrade } from '@/lib/check/types'
+
+const GRADE_LABEL: Record<MetricGrade, string> = { good: 'Good', ok: 'OK', weak: 'Weak' }
 
 export default function MetricsPanel({ metrics }: { metrics: DocMetric[] }) {
   if (metrics.length === 0) return null
@@ -11,7 +13,10 @@ export default function MetricsPanel({ metrics }: { metrics: DocMetric[] }) {
         {metrics.map(metric => (
           <li key={metric.id} className={metric.flagged ? 'metric flagged' : 'metric'}>
             <div className="metric-header">
-              <strong>{metric.label}</strong>
+              <span>
+                <strong>{metric.label}</strong>
+                {metric.grade && <span className={`badge grade grade-${metric.grade}`}>{GRADE_LABEL[metric.grade]}</span>}
+              </span>
               <span className="metric-value">{metric.value}</span>
             </div>
             <p>{metric.assessment}</p>

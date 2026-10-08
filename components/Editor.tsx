@@ -5,8 +5,8 @@ import { markdown, markdownLanguage } from '@codemirror/lang-markdown'
 import { HighlightStyle, syntaxHighlighting } from '@codemirror/language'
 import { languages } from '@codemirror/language-data'
 import { setDiagnostics, type Diagnostic } from '@codemirror/lint'
-import { EditorSelection, EditorState, Prec, type ChangeSet } from '@codemirror/state'
-import { EditorView, keymap, placeholder } from '@codemirror/view'
+import { EditorSelection, EditorState, Prec, StateEffect, StateField, type ChangeSet } from '@codemirror/state'
+import { Decoration, EditorView, keymap, placeholder, type DecorationSet } from '@codemirror/view'
 import { tags } from '@lezer/highlight'
 import { minimalSetup } from 'codemirror'
 import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react'
@@ -15,6 +15,7 @@ import type { Issue } from '@/lib/check/types'
 export type EditorHandle = {
   applyReplacement: (offset: number, length: number, replacement: string) => void
   jumpTo: (offset: number, length: number) => void
+  highlight: (offset: number, length: number) => void
   cursor: () => number
   indent: () => void
   deindent: () => void
@@ -96,6 +97,13 @@ const Editor = forwardRef<EditorHandle, Props>(function Editor(
         })
         view.focus()
       },
+      highlight(offset, length) {
+        const view = viewRef.current
+        if (!view) return
+        const from = Math.max(0, Math.min(offset, view.state.doc.length))
+        const to = Math.max(from, Math.min(offset + length, view.state.doc.length))
+        view.dispatch({ effects: setHighlight.of({ from, to }) })
+      },
       cursor() {
         return viewRef.current?.state.selection.main.head ?? 0
       },
@@ -126,6 +134,25 @@ const writingHighlight = HighlightStyle.define([
   { tag: tags.quote, color: 'var(--muted)' },
 ])
 
+const setHighlight = StateEffect.define<{ from: number; to: number }>()
+
+const highlightMark = Decoration.mark({ class: 'cm-finding-highlight' })
+
+const highlightField = StateField.define<DecorationSet>({
+  create: () => Decoration.none,
+  update(highlight, transaction) {
+    if (transaction.docChanged) return Decoration.none
+    for (const effect of transaction.effects) {
+      if (effect.is(setHighlight)) {
+        const { from, to } = effect.value
+        return to > from ? Decoration.set([highlightMark.range(from, to)]) : Decoration.none
+      }
+    }
+    return highlight
+  },
+  provide: field => EditorView.decorations.from(field),
+})
+
 type Callbacks = { current: Pick<Props, 'onChange' | 'onIssueClick' | 'onCommand' | 'onFocus' | 'onBlur'> }
 
 function createState(doc: string, callbacks: Callbacks, anchor = 0): EditorState {
@@ -142,6 +169,7 @@ function createState(doc: string, callbacks: Callbacks, anchor = 0): EditorState
       syntaxHighlighting(writingHighlight),
       markdown({ base: markdownLanguage, codeLanguages: languages }),
       EditorView.lineWrapping,
+      highlightField,
       Prec.highest(
         keymap.of([
           { key: 'Mod-Enter', run: command('split', () => true) },

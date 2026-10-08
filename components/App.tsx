@@ -48,6 +48,7 @@ export default function App({ doc }: { doc: string }) {
   const [checking, setChecking] = useState(false)
   const [reviewNotes, setReviewNotes] = useState<ReviewNote[]>([])
   const [done, setDone] = useState<string[]>([])
+  const [knownWords, setKnownWords] = useState('[]')
   const [conflict, setConflict] = useState<Conflict | null>(null)
   const [popover, setPopover] = useState<Popover | null>(null)
   const [focusRequest, setFocusRequest] = useState<Focus | null>(null)
@@ -128,7 +129,21 @@ export default function App({ doc }: { doc: string }) {
   useEffect(() => {
     const timer = setTimeout(() => void runCheck(text, language), 900)
     return () => clearTimeout(timer)
-  }, [text, language, runCheck])
+  }, [text, language, knownWords, runCheck])
+
+  useEffect(() => {
+    const loadWords = async () => {
+      try {
+        const response = await fetch('/api/words')
+        if (response.ok) setKnownWords(JSON.stringify(((await response.json()) as { words: string[] }).words))
+      } catch {
+        return
+      }
+    }
+    void loadWords()
+    const interval = setInterval(loadWords, 2500)
+    return () => clearInterval(interval)
+  }, [])
 
   useEffect(() => {
     if (text === lastSavedText.current || conflict) return
@@ -289,6 +304,29 @@ export default function App({ doc }: { doc: string }) {
     [locate]
   )
 
+  const handleHover = useCallback(
+    (issue: Issue | null) => {
+      editors.current.forEach(editor => editor.highlight(0, 0))
+      if (!issue) return
+      const { cell, local } = locate(issue)
+      editors.current.get(cell.id)?.highlight(local, issue.length)
+    },
+    [locate]
+  )
+
+  const findingText = useCallback((issue: Issue) => {
+    const words = textRef.current.slice(issue.offset, issue.offset + issue.length)
+    const fixes = issue.replacements.slice(0, 3).map(replacement => (replacement === '' ? 'remove' : replacement))
+    return [
+      words ? `${issue.title}: “${words}”` : issue.title,
+      issue.message,
+      issue.explanation && `Why: ${issue.explanation}`,
+      fixes.length > 0 && `Suggestions: ${fixes.join(', ')}`,
+    ]
+      .filter(Boolean)
+      .join('\n')
+  }, [])
+
   const handleCellChange = useCallback(
     (id: string, value: string, pasted: Pasted | null) => {
       const current = cellsRef.current
@@ -416,6 +454,8 @@ export default function App({ doc }: { doc: string }) {
         onToggleDone={toggleDone}
         onApply={handleApply}
         onJump={handleJump}
+        onHover={handleHover}
+        copyText={findingText}
         editorRef={editorRef}
         onCellChange={handleCellChange}
         onCellCommand={handleCommand}

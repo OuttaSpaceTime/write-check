@@ -203,6 +203,29 @@ body {
   color: var(--faint);
 }
 
+.editor .cm-underline {
+  background-position: left bottom;
+  background-repeat: repeat-x;
+  padding-bottom: 0.7px;
+}
+
+.editor .cm-underline-error {
+  background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="6" height="3">%3Cpath%20d%3D%22m0%202.5%20l2%20-1.5%20l1%200%20l2%201.5%20l1%200%22%20stroke%3D%22%23f11%22%20fill%3D%22none%22%20stroke-width%3D%22.7%22%2F%3E</svg>');
+}
+
+.editor .cm-underline-warning {
+  background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="6" height="3">%3Cpath%20d%3D%22m0%202.5%20l2%20-1.5%20l1%200%20l2%201.5%20l1%200%22%20stroke%3D%22orange%22%20fill%3D%22none%22%20stroke-width%3D%22.7%22%2F%3E</svg>');
+}
+
+.editor .cm-underline-info {
+  background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="6" height="3">%3Cpath%20d%3D%22m0%202.5%20l2%20-1.5%20l1%200%20l2%201.5%20l1%200%22%20stroke%3D%22%23999%22%20fill%3D%22none%22%20stroke-width%3D%22.7%22%2F%3E</svg>');
+}
+
+.editor .cm-edited {
+  text-decoration: underline 2px var(--claude);
+  text-underline-offset: 4px;
+}
+
 .editor .cm-finding-highlight {
   background: var(--accent-soft);
   box-shadow: 0 0 0 1px var(--accent);

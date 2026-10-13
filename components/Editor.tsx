@@ -4,13 +4,13 @@ import { indentLess, indentMore, indentWithTab } from '@codemirror/commands'
 import { markdown, markdownLanguage } from '@codemirror/lang-markdown'
 import { HighlightStyle, syntaxHighlighting } from '@codemirror/language'
 import { languages } from '@codemirror/language-data'
-import { setDiagnostics, type Diagnostic } from '@codemirror/lint'
 import { EditorSelection, EditorState, Prec, StateEffect, StateField, type ChangeSet } from '@codemirror/state'
 import { Decoration, EditorView, keymap, placeholder, type DecorationSet } from '@codemirror/view'
 import { tags } from '@lezer/highlight'
 import { minimalSetup } from 'codemirror'
 import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react'
 import type { Issue } from '@/lib/check/types'
+import type { EditMark } from '@/lib/edits'
 
 export type EditorHandle = {
   applyReplacement: (offset: number, length: number, replacement: string) => void
@@ -29,6 +29,7 @@ type Props = {
   value: string
   onChange: (value: string, pasted: Pasted | null) => void
   issues: Issue[]
+  edits: EditMark[]
   onIssueClick: (pos: number, coords: { x: number; y: number }) => void
   onCommand: (command: CellCommand, pos: number) => boolean
   onFocus: () => void
@@ -37,7 +38,7 @@ type Props = {
 }
 
 const Editor = forwardRef<EditorHandle, Props>(function Editor(
-  { value, onChange, issues, onIssueClick, onCommand, onFocus, onBlur, focusRequest },
+  { value, onChange, issues, edits, onIssueClick, onCommand, onFocus, onBlur, focusRequest },
   ref
 ) {
   const containerRef = useRef<HTMLDivElement | null>(null)
@@ -61,7 +62,7 @@ const Editor = forwardRef<EditorHandle, Props>(function Editor(
     if (!view || view.state.doc.toString() === value) return
     const anchor = Math.min(view.state.selection.main.anchor, value.length)
     view.setState(createState(value, callbacks, anchor))
-    view.dispatch(setDiagnostics(view.state, diagnosticsFor(issues, value.length)))
+    view.dispatch({ effects: setFindings.of(findingMarks(issues, edits, value.length)) })
   }, [value])
 
   useEffect(() => {
@@ -69,11 +70,14 @@ const Editor = forwardRef<EditorHandle, Props>(function Editor(
     if (view && focusRequest) placeCursor(view, focusRequest.pos)
   }, [focusRequest])
 
-  const signature = issues.map(issue => `${issue.id}:${issue.offset}:${issue.length}`).join('|')
+  const signature = [
+    ...issues.map(issue => `${issue.id}:${issue.offset}:${issue.length}:${issue.applied}`),
+    ...edits.map(edit => `edit:${edit.offset}:${edit.length}`),
+  ].join('|')
   useEffect(() => {
     const view = viewRef.current
     if (!view) return
-    view.dispatch(setDiagnostics(view.state, diagnosticsFor(issues, view.state.doc.length)))
+    view.dispatch({ effects: setFindings.of(findingMarks(issues, edits, view.state.doc.length)) })
   }, [signature])
 
   useImperativeHandle(
@@ -153,6 +157,19 @@ const highlightField = StateField.define<DecorationSet>({
   provide: field => EditorView.decorations.from(field),
 })
 
+const setFindings = StateEffect.define<DecorationSet>()
+
+const findingsField = StateField.define<DecorationSet>({
+  create: () => Decoration.none,
+  update(findings, transaction) {
+    for (const effect of transaction.effects) {
+      if (effect.is(setFindings)) return effect.value
+    }
+    return findings.map(transaction.changes)
+  },
+  provide: field => EditorView.decorations.from(field),
+})
+
 type Callbacks = { current: Pick<Props, 'onChange' | 'onIssueClick' | 'onCommand' | 'onFocus' | 'onBlur'> }
 
 function createState(doc: string, callbacks: Callbacks, anchor = 0): EditorState {
@@ -169,6 +186,7 @@ function createState(doc: string, callbacks: Callbacks, anchor = 0): EditorState
       syntaxHighlighting(writingHighlight),
       markdown({ base: markdownLanguage, codeLanguages: languages }),
       EditorView.lineWrapping,
+      findingsField,
       highlightField,
       Prec.highest(
         keymap.of([
@@ -224,20 +242,16 @@ function insertedRange(changes: ChangeSet): Pasted {
   return { from, to }
 }
 
-function diagnosticsFor(issues: Issue[], docLength: number): Diagnostic[] {
-  return issues
-    .map(issue => ({ issue, from: Math.max(0, issue.offset), to: Math.min(issue.offset + issue.length, docLength) }))
-    .filter(({ from, to }) => to > from)
-    .map(({ issue, from, to }) => ({
-      from,
-      to,
-      severity: issue.severity,
-      message: `${issue.title}: ${issue.message}`,
-      actions: issue.replacements.slice(0, 3).map(replacement => ({
-        name: replacement === '' ? 'remove' : replacement,
-        apply: (target: EditorView, from: number, to: number) => {
-          target.dispatch({ changes: { from, to, insert: replacement } })
-        },
-      })),
-    }))
+function findingMarks(issues: Issue[], edits: EditMark[], docLength: number): DecorationSet {
+  const underlines = [
+    ...issues.map(issue => ({ ...issue, className: issue.applied ? 'cm-edited' : `cm-underline cm-underline-${issue.severity}` })),
+    ...edits.map(edit => ({ ...edit, className: 'cm-edited' })),
+  ]
+  return Decoration.set(
+    underlines
+      .map(({ offset, length, className }) => ({ className, from: Math.max(0, offset), to: Math.min(offset + length, docLength) }))
+      .filter(({ from, to }) => to > from)
+      .map(({ className, from, to }) => Decoration.mark({ class: className }).range(from, to)),
+    true
+  )
 }

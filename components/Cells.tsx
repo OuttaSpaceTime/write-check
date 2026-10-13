@@ -2,6 +2,7 @@
 
 import type { CellDoc, PlacedIssues } from '@/lib/cells'
 import type { Issue } from '@/lib/check/types'
+import type { EditMark } from '@/lib/edits'
 import Editor, { type CellCommand, type EditorHandle, type Pasted } from './Editor'
 import IssueList from './IssueList'
 
@@ -9,6 +10,7 @@ type Props = {
   cells: CellDoc
   starts: number[]
   placed: PlacedIssues
+  edits: EditMark[]
   isDone: (issue: Issue) => boolean
   onToggleDone: (issue: Issue) => void
   onApply: (issue: Issue, replacement: string) => void
@@ -46,6 +48,9 @@ export default function Cells(props: Props) {
         const underlined = feedback.words
           .filter(issue => !isDone(issue))
           .map(issue => ({ ...issue, offset: issue.offset - starts[index]! }))
+        const edited = props.edits
+          .filter(mark => mark.offset < starts[index]! + cell.text.length && mark.offset + mark.length > starts[index]!)
+          .map(mark => ({ ...mark, offset: mark.offset - starts[index]! }))
         return (
           <section key={cell.id} className="cell" aria-label={`Cell ${index + 1}`}>
             <div className="cell-text">
@@ -103,6 +108,7 @@ export default function Cells(props: Props) {
                 ref={handle => props.editorRef(cell.id, handle)}
                 value={cell.text}
                 issues={underlined}
+                edits={edited}
                 onChange={(value, pasted) => props.onCellChange(cell.id, value, pasted)}
                 onCommand={(command, pos) => props.onCellCommand(cell.id, command, pos)}
                 onIssueClick={(pos, coords) => props.onCellClick(cell.id, pos, coords)}

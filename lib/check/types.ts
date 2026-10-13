@@ -17,6 +17,7 @@ export type Issue = {
   severity: IssueSeverity
   scope?: IssueScope
   staleQuote?: string
+  applied?: boolean
 }
 
 export type MetricGrade = 'good' | 'ok' | 'weak'

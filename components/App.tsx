@@ -21,6 +21,7 @@ import {
 import { mapIssues, textChange } from '@/lib/check/mapIssues'
 import type { CheckLanguage, CheckResponse, Issue } from '@/lib/check/types'
 import { doneKey } from '@/lib/done'
+import { markEdits, type EditMark } from '@/lib/edits'
 import { resolveReviewNotes, type ReviewNote } from '@/lib/review'
 import Cells from './Cells'
 import type { CellCommand, EditorHandle, Pasted } from './Editor'
@@ -37,6 +38,8 @@ type Checked = { text: string; result: CheckResponse }
 
 type Focus = { id: string; pos: number }
 
+type Edits = { text: string; marks: EditMark[] }
+
 const JSON_HEADERS = { 'content-type': 'application/json' }
 
 export default function App({ doc }: { doc: string }) {
@@ -52,6 +55,7 @@ export default function App({ doc }: { doc: string }) {
   const [conflict, setConflict] = useState<Conflict | null>(null)
   const [popover, setPopover] = useState<Popover | null>(null)
   const [focusRequest, setFocusRequest] = useState<Focus | null>(null)
+  const [edits, setEdits] = useState<Edits>({ text: '', marks: [] })
   const editors = useRef(new Map<string, EditorHandle>())
   const focusedCell = useRef<string | null>(null)
   const cellsRef = useRef(cells)
@@ -67,13 +71,22 @@ export default function App({ doc }: { doc: string }) {
   const checkCounter = useRef(0)
 
   const commit = useCallback((next: CellDoc, focus: Focus | null = null) => {
+    const nextText = joinCells(next)
+    setEdits(current =>
+      current.text === nextText
+        ? current
+        : { text: nextText, marks: mapIssues(current.marks, textChange(current.text, nextText)) }
+    )
     cellsRef.current = next
     setCells(next)
     if (focus) setFocusRequest(focus)
   }, [])
 
   const replaceText = useCallback((next: string) => {
-    commit(keepIds(cellsRef.current, deriveCells(next, cellLayout(cellsRef.current))))
+    const doc = keepIds(cellsRef.current, deriveCells(next, cellLayout(cellsRef.current)))
+    const nextText = joinCells(doc)
+    setEdits(current => ({ text: nextText, marks: markEdits(current.text, nextText, current.marks) }))
+    commit(doc)
   }, [commit])
 
   const runCheck = useCallback(async (current: string, lang: CheckLanguage) => {
@@ -321,7 +334,7 @@ export default function App({ doc }: { doc: string }) {
       words ? `${issue.title}: “${words}”` : issue.title,
       issue.message,
       issue.explanation && `Why: ${issue.explanation}`,
-      fixes.length > 0 && `Suggestions: ${fixes.join(', ')}`,
+      fixes.length > 0 && `${issue.applied ? 'Original' : 'Suggestions'}: ${fixes.join(', ')}`,
     ]
       .filter(Boolean)
       .join('\n')
@@ -445,11 +458,17 @@ export default function App({ doc }: { doc: string }) {
           `${issues.length} finding${issues.length === 1 ? '' : 's'} · ${doneCount} done · ${
             result.detectedLanguage === 'de' ? 'German' : 'English'
           }`}
+        {edits.marks.length > 0 && (
+          <button type="button" className="tool" onClick={() => setEdits(current => ({ ...current, marks: [] }))}>
+            Clear edit marks
+          </button>
+        )}
       </p>
       <Cells
         cells={cells}
         starts={starts}
         placed={placed}
+        edits={edits.marks}
         isDone={isDone}
         onToggleDone={toggleDone}
         onApply={handleApply}

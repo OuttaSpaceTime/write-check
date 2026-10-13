@@ -34,7 +34,7 @@ Tell the user the relative path you chose, so they can reopen it later.
 - `/write-check <text>` → Write the given text to `document.md`, then open the app on that check.
 - `/write-check <instructions>` → Draft the text yourself, write it to `document.md`, then open the app. When drafting: be concrete and specific, avoid the AI-boilerplate the app flags (delve, tapestry, "plays a pivotal role", "in today's digital age", formulaic transitions, em-dash chains, uniform sentence rhythm — and the German equivalents: "in der heutigen digitalen Welt", "spielt eine entscheidende Rolle", "zudem"-chains, Fazit-Formeln). Write like a person with an opinion, not a brochure.
 - `/write-check` with no arguments → ask which text this is about, or start an empty check directory and open the app on it.
-- When the user asks you to correct or rewrite something: edit the check's `document.md` directly with the Edit tool; the browser picks it up automatically.
+- When the user asks you to correct or rewrite something: edit the check's `document.md` directly with the Edit tool; the browser picks it up automatically and underlines the words you changed in teal, so the user sees what you did. The underlines stay until the user edits those words or clears them.
 
 ## Giving feedback (review notes)
 
@@ -62,11 +62,18 @@ Rules:
   - no `scope`: the note is about the quoted words, which get underlined.
   - `"scope": "cell"`: the note is about the whole paragraph that holds the quote ("this paragraph has no point"). Quote a few words from it; nothing is underlined.
   - `"scope": "missing"`: something is missing right after the quote (a step, a number, a transition). The note appears as a dashed "Something is missing here" slot after that paragraph.
-  - no `quote`: the note is about the whole text (structure, ordering, a missing section or counter-argument) and appears in the "Whole text" box above the first cell.
+  - no `quote`: the note appears in the "Whole text" box above the first cell. Use it only for a point no quote can carry: the order of the sections, a template or audience the whole text must fit, a decision from the chat that has no place in the text. A missing section or counter-argument usually has a spot (after the claim it should answer, between the sections it belongs between) and goes there as a `"missing"` note.
+- Never put a point in the "Whole text" box that is anchored, or could be. No overview of the anchored notes ("Where to shorten: merge the paragraphs under 3, shrink the explanation under 4, end with a question"), and no "this happens throughout" note for a problem you can point to.
+- When one problem shows up in several places, put a note at each place. The first carries the full `message` and `explanation`. Each further one keeps the same `title`, says in `message` that it is the same problem as the note on "<first note's quote>", gives a `suggestion` for that line only, and has no `explanation`.
 - `severity`: `"error"` (broken logic, factual contradiction), `"warning"` (unclear, weak argument), `"info"` (style polish).
-- Review for: **logic soundness** (does each claim follow from its support? non-sequiturs? contradictions? unsupported leaps?), **clarity** (is the point of each section stated and reachable? undefined jargon? buried lede?), and anything discussed in the current chat — feedback the user gave you or conclusions from your discussion belong in the notes too, so the app shows one consolidated list.
-- Every note must teach: always fill `explanation` with the principle, not just the fix.
-- Replace the whole file each time; write `{"notes": []}` to clear. Notes whose quote no longer matches the text move to the "Whole text" box with a "quoted words are no longer in the text" line.
+- Review for: **logic soundness** (does each claim follow from its support? non-sequiturs? contradictions? unsupported leaps?), **clarity** (is the point of each section stated and reachable? undefined jargon? buried lede?), and anything discussed in the current chat — feedback the user gave you or conclusions from your discussion belong in the notes too, so the app shows one consolidated list. Anchor them like any other note.
+- Every note must teach: always fill `explanation` with the principle, not just the fix. The only exception is a further note on a repeated problem, described in the rule above.
+- After writing `review.json`, run this in the app directory. It prints every quote that is not found exactly once in the document, because a quote that isn't found lands its note in the "Whole text" box. A quote whose `suggestion` is in the text counts as found, because the user applied it. Fix each one it prints:
+
+  ```
+  node -e 'const fs=require("fs"),d=process.argv[1],t=fs.readFileSync(d+"/document.md","utf8");for(const {quote:q,suggestion:s} of JSON.parse(fs.readFileSync(d+"/review.json","utf8")).notes){const n=q?t.split(q).length-1:1;if(n>1)console.log("not unique:",q);if(n===0&&!(s&&t.includes(s)))console.log("not found:",q)}' data/checks/<YYYY-MM-DD>-<slug>
+  ```
+- Replace the whole file each time; write `{"notes": []}` to clear. Notes whose quote no longer matches the text move to the "Whole text" box with a "quoted words are no longer in the text" line, unless the note's `suggestion` was applied: then the note stays on the suggested words with a button to revert to the quote.
 - The user ticks notes off as done. `done.json` in the check directory lists them: Claude notes as `claude|<title>|<quote>`, app findings as `<ruleId>|<flagged words>`. Read it before writing a new review and don't repeat a note the user already closed unless the problem came back in a new form; keep the same `title` and `quote` for a note you carry over, or its tick is lost.
 - `cells.json` is the app's own record of how the user split and merged cells. Don't edit it.
 

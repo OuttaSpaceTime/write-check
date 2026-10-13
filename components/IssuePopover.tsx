@@ -60,7 +60,7 @@ export default function IssuePopover({ issues, x, y, onApply, onClose }: Props) 
                       onClose()
                     }}
                   >
-                    {replacement === '' ? 'Remove' : replacement}
+                    {issue.applied ? `Revert to “${replacement}”` : replacement === '' ? 'Remove' : replacement}
                   </button>
                 ))}
               </div>

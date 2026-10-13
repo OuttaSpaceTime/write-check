@@ -11,7 +11,7 @@ export function textChange(before: string, after: string): TextChange {
   return { from: prefix, to: before.length - suffix, insert: after.length - suffix - prefix }
 }
 
-export function mapIssues(issues: Issue[], change: TextChange): Issue[] {
+export function mapIssues<T extends Pick<Issue, 'offset' | 'length'>>(issues: T[], change: TextChange): T[] {
   const shift = change.insert - (change.to - change.from)
   return issues.flatMap(issue => {
     if (issue.offset + issue.length <= change.from) return [issue]

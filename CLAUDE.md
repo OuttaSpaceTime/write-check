@@ -40,6 +40,8 @@ one-character drift silently underlines the wrong word.
 - `lib/cells.ts` — cell model: paragraph cells (a heading joins the block below), split,
   merge, insert, delete, the `cells.json` layout anchors, and placing issues into cells.
 - `lib/words.ts` — drops spelling findings on words listed in the shared `data/words.json`.
+- `lib/edits.ts` — finds the words an outside write to the document changed, so the editor can
+  underline Claude's edits; the marks shift with later edits like findings do.
 - `lib/done.ts` — the key a ticked-off finding is saved under in `done.json`.
 - `components/` — `App.tsx` holds all state and the sync loops; the rest is presentational.
 

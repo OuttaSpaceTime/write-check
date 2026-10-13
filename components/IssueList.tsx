@@ -106,7 +106,7 @@ export default function IssueList({ issues, isDone, onToggleDone, onApply, onJum
                               className="fix-button"
                               onClick={() => onApply(issue, replacement)}
                             >
-                              {replacement === '' ? 'Remove' : replacement}
+                              {issue.applied ? `Revert to “${replacement}”` : replacement === '' ? 'Remove' : replacement}
                             </button>
                           ))}
                         </div>

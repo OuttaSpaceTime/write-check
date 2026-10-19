@@ -5,11 +5,17 @@ description: Open the local Write Check app (markdown grammar, spelling and AI-s
 
 # Write Check
 
-Local Next.js app at `/home/felix/Code/Misc/write-check`, served on **http://localhost:3456**. It checks markdown text for grammar/spelling (LanguageTool, German + English), AI-writing patterns (rule catalog + document statistics), and shows Claude review notes. The goal is not only fixing texts but helping Felix improve as a writer — feedback must always explain *why* something is a problem.
+Local Next.js app at `/home/outtaspacetime/Code/write-check`, served on **http://localhost:3456**. It checks markdown text for grammar/spelling (LanguageTool, German + English), AI-writing patterns (rule catalog + document statistics), and shows Claude review notes. The goal is not only fixing texts but helping Felix improve as a writer — feedback must always explain *why* something is a problem.
 
 ## Start the services
 
-1. Dev server: `curl -sf http://localhost:3456/api/review >/dev/null 2>&1` — if this fails, run `npm run dev` in the app directory as a background task and wait until the URL responds.
+Run every command of this skill in the app directory.
+
+1. Dev server: `curl -sf http://localhost:3456/api/review >/dev/null 2>&1` — if this fails, run `npm install` if `node_modules` is missing, then `npm run dev` in the app directory as a background task, and wait until the URL responds:
+
+   ```
+   timeout 60 bash -c 'until curl -sf http://localhost:3456/api/review >/dev/null; do sleep 1; done'
+   ```
 2. LanguageTool: `docker start languagetool 2>/dev/null || docker run -d --name languagetool -p 8010:8010 erikvl87/languagetool`
 
 ## One directory per check
@@ -20,10 +26,10 @@ Every new check gets its own directory inside the app: `data/checks/<YYYY-MM-DD>
 - A new `/write-check` invocation, or a text that is plainly a different piece of writing, gets a new directory. Earlier checks stay readable where they are.
 - Before picking a slug, `ls data/checks/` — if the user is continuing a text you already worked on, reuse its directory instead of making a near-duplicate.
 
-Open the app on that check:
+Open the app on that check as a web app — its own window without title bar or browser UI. Never use `xdg-open`, which opens a browser tab instead:
 
 ```
-xdg-open 'http://localhost:3456/?doc=checks/<YYYY-MM-DD>-<slug>'
+omarchy-launch-webapp 'http://localhost:3456/?doc=checks/<YYYY-MM-DD>-<slug>'
 ```
 
 Tell the user the relative path you chose, so they can reopen it later.

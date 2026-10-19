@@ -510,11 +510,6 @@ export default function App({ doc }: { doc: string }) {
           onClose={() => setPopover(null)}
         />
       )}
-      <p className="editor-hint">
-        Ctrl+Enter (⌘+Enter on a Mac) splits a cell at the cursor, or starts a new cell when the cursor is at its end.
-        Backspace at the start of a cell merges it into the one above; Delete at its end pulls in the next one. The arrow
-        keys move between cells. Tab indents, Shift-Tab deindents; press Escape and then Tab to leave a cell.
-      </p>
       <MetricsPanel metrics={result?.metrics ?? []} />
       <section className="rendered">
         <div className="rendered-head">

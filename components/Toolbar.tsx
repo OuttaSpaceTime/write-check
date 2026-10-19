@@ -1,6 +1,7 @@
 'use client'
 
 import type { CheckLanguage } from '@/lib/check/types'
+import ShortcutsOverlay from './ShortcutsOverlay'
 
 type Props = {
   language: CheckLanguage
@@ -67,6 +68,7 @@ export default function Toolbar(props: Props) {
         >
           <span className="lt-dot">●</span> LanguageTool{props.languageToolAvailable === false ? ' offline' : ''}
         </span>
+        <ShortcutsOverlay />
         <button type="button" className="tool primary" onClick={props.onCheck} disabled={props.checking}>
           {props.checking ? 'Checking…' : 'Check now'}
         </button>
